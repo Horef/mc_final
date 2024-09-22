@@ -1,137 +1,212 @@
-import time
-
-from selenium import webdriver
-from bs4 import BeautifulSoup
-from selenium.webdriver.common.by import By
+import numpy as np
 import pandas as pd
+import data_preprocessing as dp
+import matplotlib.pyplot as plt
+from models import KNearestNeighbors as knn
+from models import FeedForwardNetwork as ffn
+from sklearn.linear_model import LinearRegression
+from models import DecisionTree as dt
 from tqdm import tqdm
 
-post_titles = []
-post_urls = []
-all_comments = []
-
-class Comment:
-    def __init__(self, comment_id, score, awards, length, replies=0):
-        self.comment_id = comment_id
-        self.score = score
-        self.replies = replies
-        self.awards = awards
-        self.length = length
-        self.length_to_avg_ratio = 0
-
-    def add_reply(self):
-        self.replies += 1
-
 if __name__ == '__main__':
-    driver = webdriver.Chrome()
-    subreddits = ['macapps', 'learnprogramming', 'learntodraw', 'learnpython', 'learnmath', 'LaTeX', 'Python',
-                  'datascience', 'dataengineering', 'malefashionadvice', 'MachineLearning', 'ObsidianMD',
-                  'neuroscience', 'printSF', 'science', 'ios', 'MacOS', 'mac']
+    # loading the data
+    data = pd.read_pickle('labels/full_data.pkl')
+    # cleaning the data
+    data = dp.clean_data(data)
+    # splitting the data
+    data_folds = dp.fold_split(data, folds=5)
 
-    # for each subreddit, we will get the posts and comments
-    for subreddit in subreddits:
-        print(f'Starting to scrape subreddit: {subreddit}')
+    print('K-Nearest Neighbors Model')
+    # trying different knn models
+    # doing the cross validation
+    mses_list = []
+    for i in tqdm(range(len(data_folds)), desc='Cross Validation'):
+        # getting the train and test data
+        test_data = data_folds[i]
+        train_data = pd.concat(data_folds[:i] + data_folds[i+1:])
+        train_X, train_y = train_data.drop(columns=['sureness']), train_data['sureness']
+        test_X, test_y = test_data.drop(columns=['sureness']), test_data['sureness']
 
-        driver.get(f"https://www.reddit.com/r/{subreddit}/new/")
-        time.sleep(3)
+        max_neighbors = len(train_X)
+        knn_models = [knn.KNN(n_neighbors=n_n) for n_n in range(1, max_neighbors)]
 
-        # scrolling the page a few times to load more posts
-        for i in tqdm(range(60), desc='Collecting Posts'):
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(3)
-            # finding all the articles on the page
-            posts = BeautifulSoup(driver.page_source, 'html.parser').find_all('article', class_='w-full m-0')
-            for post in posts:
-                title = post['aria-label']
-                post_box = post.find_all_next('shreddit-post')
-                url = post_box[0]['content-href']
-                # print(f'Post title: {title}')
-                # print(f'Post URL: {url}\n')
+        mses = []
+        for model, n_n in zip(knn_models, range(1, max_neighbors)):
+            # training the model
+            model.fit(X=train_X, y=train_y)
+            # predicting the labels
+            predictions = model.predict(test_X)
+            # calculating the average error
+            mse = ((predictions - test_y) ** 2).mean()
+            mses.append(mse)
+            #print(f'Mean Squared Error for the KNN model with num of neighbors {n_n} is: {mse:.2f}')
+        mses_list.append((mses, max_neighbors))
 
-                # if the title contains the question mark, it is a question post
-                # we want to include only such posts
-                # or, if it contains the word 'question' or 'help', we will include it
-                if '?' in title or 'question' in title.lower() or 'help' in title.lower():
-                    post_titles.append(title)
-                    post_urls.append(url)
+    # plotting the average errors
+    plt.figure(figsize=(10, 6))
+    for i in range(len(data_folds)):
+        plt.plot(range(1, mses_list[i][1]), mses_list[i][0], label=f'Fold {i+1}')
+    # plotting the average error over all folds
+    avg_mses = np.array([mses[0] for mses in mses_list]).mean(axis=0)
+    plt.plot(range(1, mses_list[0][1]), avg_mses, label='Average', color='black', linestyle='--')
+    plt.xlabel('Number of Neighbors')
+    plt.ylabel('MSE')
+    plt.legend()
+    plt.title('KNN Model Performance')
+    plt.savefig('plots/knn_performance.png')
+    # printing the average mse for each number of neighbors
+    print('Average MSE for each number of neighbors:')
+    for i, mse in enumerate(avg_mses):
+        print(f'Number of neighbors: {i+1}, Average MSE: {mse:.2f}')
+    # printing the best number of neighbors
+    best_n_neighbors = np.argmin(avg_mses) + 1
+    print(f'The best number of neighbors is: {best_n_neighbors}, with an average MSE of: {avg_mses[best_n_neighbors-1]:.2f}')
 
-        print('Loading comments for each post')
-        # in order to avoid repeating elements
-        post_titles = list(set(post_titles))
-        post_urls = list(set(post_urls))
+    # # testing a simple feed forward network model
+    # test_data = data_folds[0]
+    # train_data = pd.concat(data_folds[:0] + data_folds[0 + 1:])
+    # train_X, train_y = train_data.drop(columns=['sureness']).to_numpy(), train_data['sureness'].to_numpy()
+    # test_X, test_y = test_data.drop(columns=['sureness']).to_numpy(), test_data['sureness'].to_numpy()
 
-        # for each post, we will open the URL and get the comments
-        for i in tqdm(range(len(post_urls)), desc='Scraping Posts'):
-            try:
-                driver.get(post_urls[i])
-            except Exception as e:
-                print(f'Error: {e}')
-                continue
-            time.sleep(3)
-            comments = BeautifulSoup(driver.page_source, 'html.parser').find_all('shreddit-comment')
 
-            if len(comments) == 0:
-                #print('No comments found for the post')
-                continue
+    print('\n\nFeed Forward Network Model')
+    # training the model
+    epoch_num = 150
+    # model = ffn.FFN(num_layers=3, hidden_size=4)
+    # losses, mses_train, mses_test = model.fit_n_test(X_train=train_X, y_train=train_y, X_test=test_X, y_test=test_y,
+    #                                                  epochs=epoch_num, lr=0.01)
+    # # plotting the loss, mse for training and testing data over the epochs
+    # # loss is on one graph, mse for training and testing data is on another graph
+    # plt.subplots(1, 2, figsize=(15, 6))
+    # plt.subplot(1, 2, 1)
+    # plt.plot(range(epoch_num), losses)
+    # plt.xlabel('Epoch')
+    # plt.ylabel('Loss')
+    # plt.title('Loss over Epochs')
+    # plt.subplot(1, 2, 2)
+    # plt.plot(range(epoch_num), mses_train, label='Training Data')
+    # plt.plot(range(epoch_num), mses_test, label='Testing Data')
+    # plt.xlabel('Epoch')
+    # plt.ylabel('MSE')
+    # plt.title('MSE over Epochs')
+    # plt.legend()
+    # plt.savefig('plots/ffn_performance.png')
+    # print(f'Mean Squared Error for the Feed Forward Network model is: {mses_test[-1]:.2f}')
 
-            # We are only interested in top-level comments, so for every comment, we will check its depth
-            # if the depth is 0, we will include it in our analysis.
-            # if the depth is 1, we find the corresponding top-level comment and increment its replies count
-            # if the depth is 2 or more, we ignore it
-            post_comments = []
-            comment_length = 0
-            for comment in comments:
-                try:
-                    comment_text_box = comment.find_all_next('div', attrs={'id' : '-post-rtjson-content'})
-                    comment_text = comment_text_box[0].find_all_next('p')[0].text
-                    # cleaning the comment text by removing new lines, tabs and carriage returns
-                    comment_text = comment_text.replace('\n', '').replace('\t', '').replace('\r', '')
-                    # removing leading and trailing whitespaces
-                    comment_text = comment_text.strip()
-                    comment_length += len(comment_text)
+    # trying different feed forward network models
+    # doing the cross validation
+    mses_list = []
+    for i in tqdm(range(len(data_folds)), desc='Cross Validation'):
+        # getting the train and test data
+        test_data = data_folds[i]
+        train_data = pd.concat(data_folds[:i] + data_folds[i+1:])
+        train_X, train_y = train_data.drop(columns=['sureness']).to_numpy(), train_data['sureness'].to_numpy()
+        test_X, test_y = test_data.drop(columns=['sureness']).to_numpy(), test_data['sureness'].to_numpy()
 
-                    award_box = comment.find_all_next('award-button')
-                    awards = award_box[0]['count']
+        # training the model
+        model = ffn.FFN(hidden_size=10, num_layers=3)
+        model.fit(X=train_X, y=train_y, printouts=False)
+        # predicting the labels
+        predictions = model.predict(test_X)
+        # calculating the average error
+        mse = ((predictions - test_y) ** 2).mean()
+        mses_list.append(mse)
+        #print(f'Mean Squared Error for the Feed Forward Network model is: {mse:.2f}')
 
-                    # trying to find faceplate number of additional comments, if any
-                    replies = 0
-                    faceplate_box = comment.find_all_next('faceplate-partial', attrs={'slot': f'children-{comment['thingid']}-0'})
-                    if len(faceplate_box) > 0:
-                        faceplate_box_num = faceplate_box[0].find_all_next('faceplate-number')
-                        if len(faceplate_box_num) > 0:
-                            replies = int(faceplate_box_num[0]['number'])
+    # printing the average mse for the feed forward network model
+    avg_mse = np.array(mses_list).mean()
+    print(f'Average MSE for the Feed Forward Network model is: {avg_mse:.2f}')
 
-                    if comment['depth'] == '0':
-                        post_comments.append(Comment(comment_id=comment['thingid'],
-                                                     score=comment['score'], awards=awards,
-                                                     length=len(comment_text), replies=replies))
-                    elif comment['depth'] == '1':
-                        for prev_comment_id in range(len(post_comments)-1, 0, -1):
-                            post_comment = post_comments[prev_comment_id]
-                            if post_comment.comment_id == comment['parentid']:
-                                post_comment.add_reply()
-                                #print(f'Added reply to comment ID: {post_comment.comment_id}')
-                except Exception as e:
-                    print(f'Error: {e}')
-                    continue
+    print('\n\nLinear Regression Model')
+    print('Cross Validation')
+    # trying the linear regression model
+    # doing the cross validation
+    mses_list = []
+    for i in tqdm(range(len(data_folds)), desc='Cross Validation'):
+        # getting the train and test data
+        test_data = data_folds[i]
+        train_data = pd.concat(data_folds[:i] + data_folds[i+1:])
+        train_X, train_y = train_data.drop(columns=['sureness']).to_numpy(), train_data['sureness'].to_numpy()
+        test_X, test_y = test_data.drop(columns=['sureness']).to_numpy(), test_data['sureness'].to_numpy()
 
-            # calculating the average length of the comments
-            avg_comment_length = comment_length / len(post_comments)
-            for comment in post_comments:
-                comment.length_to_avg_ratio = comment.length / avg_comment_length
-                #print(f'Comment ID: {comment.comment_id}, Score: {comment.score}, Replies: {comment.replies}, Awards: {comment.awards}, Length: {comment.length}, Length to Avg Ratio: {comment.length_to_avg_ratio}')
+        # training the model
+        model = LinearRegression()
+        model.fit(train_X, train_y)
+        # predicting the labels
+        predictions = np.clip(model.predict(test_X),0, 100)
+        # calculating the average error
+        mse = ((predictions - test_y) ** 2).mean()
+        mses_list.append(mse)
+        #print(f'Mean Squared Error for the Linear Regression model is: {mse:.2f}')
 
-            all_comments.extend(post_comments)
+    # printing the average mse for the linear regression model
+    avg_mse = np.array(mses_list).mean()
+    print(f'Average MSE for the Linear Regression model is: {avg_mse:.2f}')
 
-        post_titles = []
-        post_urls = []
+    print('\nSingle Fold Testing')
+    # testing the linear regression model on a single fold, printing the coefficients, mse
+    test_data = data_folds[4]
+    train_data = pd.concat(data_folds[:4] + data_folds[4 + 1:])
+    train_X, train_y = train_data.drop(columns=['sureness']).to_numpy(), train_data['sureness'].to_numpy()
+    test_X, test_y = test_data.drop(columns=['sureness']).to_numpy(), test_data['sureness'].to_numpy()
 
-    # creating a dataframe from the all_comments list
-    df = pd.DataFrame([vars(comment) for comment in all_comments])
-    # printing the amount of data we have collected
-    print(f'Total number of comments collected: {len(df)}')
+    model = LinearRegression()
+    model.fit(train_X, train_y)
+    predictions = np.clip(model.predict(test_X), 0, 100)
+    mse = ((predictions - test_y) ** 2).mean()
+    print(f'Mean Squared Error for the Linear Regression model is: {mse:.2f}')
+    print(f'Coefficients: {model.coef_}')
 
-    # saving the dataframe to pickle file
-    df.to_pickle('comments.pkl')
+    
+    # # plotting the predictions against the true values
+    # plt.figure(figsize=(10, 6))
+    # plt.scatter(test_y, predictions)
+    # plt.plot([0, 100], [0, 100], color='black', linestyle='--')
+    # plt.xlabel('True Values')
+    # plt.ylabel('Predictions')
+    # plt.title('True Values vs Predictions')
+    # plt.savefig('plots/lin_reg_predictions.png')
+    # # plotting the residuals
+    # residuals = predictions - test_y
+    # plt.figure(figsize=(10, 6))
+    # plt.scatter(predictions, residuals)
+    # plt.plot([0, 100], [0, 0], color='black', linestyle='--')
+    # plt.xlabel('Predictions')
+    # plt.ylabel('Residuals')
+    # plt.title('Predictions vs Residuals')
+    # plt.savefig('plots/lin_reg_residuals.png')
 
-    driver.quit()
+    print('\n\nDecision Tree Model')
+    # trying the decision tree model
+    # doing the cross validation
+    mses_list = []
+    for i in tqdm(range(len(data_folds)), desc='Cross Validation'):
+        # getting the train and test data
+        test_data = data_folds[i]
+        train_data = pd.concat(data_folds[:i] + data_folds[i+1:])
+        train_X, train_y = train_data.drop(columns=['sureness']).to_numpy(), train_data['sureness'].to_numpy()
+        test_X, test_y = test_data.drop(columns=['sureness']).to_numpy(), test_data['sureness'].to_numpy()
+
+        # training the model
+        model = dt.DecisionTree(max_depth=5)
+        model.fit(X=train_X, y=train_y)
+        # predicting the labels
+        predictions = model.predict(test_X)
+        # calculating the average error
+        mse = ((predictions - test_y) ** 2).mean()
+        mses_list.append(mse)
+        #print(f'Mean Squared Error for the Decision Tree model is: {mse:.2f}')
+
+    # printing the average mse for the decision tree model
+    avg_mse = np.array(mses_list).mean()
+    print(f'Average MSE for the Decision Tree model is: {avg_mse:.2f}')
+
+    # plotting the tree for a single fold
+    test_data = data_folds[4]
+    train_data = pd.concat(data_folds[:4] + data_folds[4 + 1:])
+    train_X, train_y = train_data.drop(columns=['sureness']).to_numpy(), train_data['sureness'].to_numpy()
+    test_X, test_y = test_data.drop(columns=['sureness']).to_numpy(), test_data['sureness'].to_numpy()
+
+    model = dt.DecisionTree(max_depth=5)
+    model.fit(X=train_X, y=train_y)
+    model.plot_tree()
