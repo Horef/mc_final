@@ -2,7 +2,7 @@ from sklearn.neighbors import KNeighborsRegressor
 
 # Implementation of K-Nearest Neighbors algorithm
 class KNN:
-    def __init__(self, n_neighbors=5, weights='distance', metric='cosine', n_jobs=-1):
+    def __init__(self, n_neighbors=6, weights='distance', metric='minkowski', n_jobs=-1):
         """
         Used to initialize the KNN model.
         :param n_neighbors: number of neighbors to consider in KNN.
