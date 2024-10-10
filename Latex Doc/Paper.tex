@@ -207,7 +207,7 @@ Here are the results for each fold, with coefficient values, MSE and MAE:
 \end{table}
 And on average, the results were \textbf{MSE of 80.69} and \textbf{MAE of 7.70}. This result is still much worse than what was achieved using the simple KNN, but is better than either Decision Tree or FFN.
 
-\subsection{Intermediate Conclusions}
+\subsection{Intermediate Conclusions}\label{sec:inter_conclusions}
 First of all, lets look at a general comparison between all of our models (the best values (less is better) are highlighted in bold):
 \begin{table}[H]
   \begin{center}
@@ -241,7 +241,7 @@ Poor perfomance of the Linear Regression model requires a few points to unpack.
 \begin{itemize}
     \item Straight away we see that the performance of the linear regressor is worse than the null model (baseline - always return average) which immediately rings that bell of something is not right. As theoretically, such a thing should never happen. There might be a few possible reasons.
     \item First of all, we want to point out that linear regression models reguire certain assumptions to work properly (linearity, homoscedasticity, independence and normality). We know for sure that at least the independence assumption doesn't hold in our case as each part of 25 points has biases coming from 5 different people. It is quite possible that other assumptions are not true too.
-    \item Secondly, due to the nature of the internet and the data we have collected, there are inherent correlations between different cues (see \href{fig:correlation_heatmap}{Correlation Heatmap}). Here are possibly some of them:
+    \item Secondly, due to the nature of the internet and the data we have collected, there are inherent correlations between different cues (see \hyperref[fig:correlation_heatmap]{Correlation Heatmap}). Here are possibly some of them:
     \begin{itemize}
         \item There is a highly clear positive between the length and length\_ratio (simply due to the fact that length\_ratio is derived from length.)
         \item There is a negative correlation between the length/length\_ratio and score, due to the fact that people (on Reddit) usually tend to only read shorter comments. Therefore shorter comments achieve a greater amount of likes.
@@ -279,11 +279,14 @@ Because machine learning models are trained to infer the label given the data, t
 Understanding metacognition may help us to understand how the humans have produced the labels, and therefore the possible connection that the model may have found. Furthermore, understanding the process underlying label creation in humans may help us to notice biases present in the training set, which would help to explain the biases expressed in the final model.
 
 \subsection{Properties that help Explainability}
+This project is very different from anything we have seen previously in the course. Mostly due to the fact that the judgement is approximated by other people (and not the one making the comment), and is made after the fact. (At a point when each comment was already seen and rated by the community.)\\
+However, we try to find connections between our cues and the material we have learned.\\
+
 As we have said earlier, in our data we have only 4 possible cues to the sureness, and we regard each of them below:
 \begin{itemize}
-    \item Score:
-    \item Replies:
-    \item Length \& Length Ratio: both of these cues may be similar to the cue of time it took to solve a problem we have seen in class. 
+    \item Score: we are not sure what we can connect this to, as this value is not based on some scale and only vaguely holds that "more is better" (but not always so). We do think, however, that it might be connected somewhat to the Hindsight Bias (lecture 7, pages 19+). We were asking our friends to grade the sureness of the person who wrote the answer before any score was given. So in some sense this is similar to what we have seen in class - someone who gets a bigger score would be graded in hindsight as being more sure than someone with a smaller score.
+    \item Replies: we do not know exactly how to connect this to anything we have seen in class. As there are no immediate parallels.
+    \item Length \& Length Ratio: we may be stretching it a little, but if we assume that correct answer is necessarily also concise - and therefore longer answer may be associated with being less sure. We could connect this cue to the relationship between hardness of the task and the time spend solving it (in general lecture 6. Specifically slides 13,14,15.) As more words written also require more time to write. 
 \end{itemize}
 
 \section{Use of BEVoCI Methodology}
@@ -294,9 +297,9 @@ Linear Mixed effects models (which are the basis for the Hierarchical Linear Reg
 
 In our case, and due to the fact that our data is a combination of 5 different people (otherwise we would not be able to train a deep learning model), "examinee" approach would not make sense.\\
 \subsection{BEVoCI for Explainability of Neural Network}\label{sec:ffn_hlr}
-If we looked solely on the performance on each of the models, we would have chosen to work with the KNN model, and we are not sure (conceptually) how the use of BEVoCI methodology would help in this case. Therefore, and due to the fact that we believe that applying BEVoCI to Neural Networks was the purpose of this project, we have chosen to do the BEVoCI analysis of the \href{sec:ffn}{Feed Forward Neural Network} predictions.\\
+If we looked solely on the performance on each of the models, we would have chosen to work with the KNN model, and we are not sure (conceptually) how the use of BEVoCI methodology would help in this case. Therefore, and due to the fact that we believe that applying BEVoCI to Neural Networks was the purpose of this project, we have chosen to do the BEVoCI analysis of the \hyperref[sec:ffn]{Feed Forward Neural Network} predictions.\\
 
-In order to use the BEVoCI model to try and understand the cues that our neural network (\href{sec:ffn}{Feed Forward Neural Network}) has used to make its predictions, we have trained the model on all of the available points (50), and made predictions on all of the same points. We have than saved this data into a new file (ffn\_data) upon which we have run Hirarchical Regression.\\
+In order to use the BEVoCI model to try and understand the cues that our neural network (\hyperref[sec:ffn]{Feed Forward Neural Network}) has used to make its predictions, we have trained the model on all of the available points (50), and made predictions on all of the same points. We have than saved this data into a new file (ffn\_data) upon which we have run Hirarchical Regression.\\
 
 Contrary to the R language, python does not have a native implementation of the lme (Linear Mixed Effects) models.
 Therefore (instead of implementing everything by hand), we have found a user-made implementation (HLR python library), and we express a deep gratitude to its creator. (Link to the github repository with the code - \href{https://github.com/teanijarv/HLR}{link}.)\\
@@ -433,7 +436,7 @@ Here is a table of (selected) statistical results for hierarchy 1:
   \end{center}
 \end{table}
 
-Here are the results from the statistical tests (in the same order in which we have presented them earlier - \href{list:stat_tests}{Statistical Tests}) (test result, p-value (if relevant)):
+Here are the results from the statistical tests (in the same order in which we have presented them earlier - \hyperref[list:stat_tests]{Statistical Tests}) (test result, p-value (if relevant)):
 \begin{table}[H]
   \begin{center}
   \begin{tabular}{|l|c|c|c|c|c|c|}
@@ -552,12 +555,13 @@ Plots of different cues and their effects on the final sureness:
 \end{figure}
 
 \subsection{BEVoCI for Meta Cognition}\label{sec:mc_hlr}
-After applying the BEVoCI methods to the data produced by the Feed Forward Neural Network, we were interested in applying the same method to the origianal data - this would help us understand if the performance of the neural network was so bad due to the small number of points, or rather due to the general lack of regularity in the data.
+After applying the BEVoCI methods to the data produced by the Feed Forward Neural Network, we were interested in applying the same method to the origianal data - this would help us understand if the performance of the neural network was so bad due to the small number of points, or rather due to the general lack of regularity in the data.\\
+We have used here the same hierarchies, and the same statistical tests as we have done for Neural Network analysis.
 
-In a similar way to the analysis of the Feed Forward Network, here too, we come to the following conclusions:
+In a similar way to the analysis of the Feed Forward Network, here we come to the following conclusions:
 \begin{itemize}
     \item There is only one cue which makes use of Linear Regression valid - replies. (Other cues do not get this validity, plausibly due, again, to the fact that many of the tests checking for the assumptions of linear regression fail for them.)
-    \item In general, it seems that the informative content (higher R2 and lower p-value for validness of regression) is ordered as follows: replies $>$ score $>$ length ratio $>$ length. (Notice that it is quite different from the results we got in \href{sec:ffn_hlr}{BEVoCI for Meta Cognition}.)
+    \item In general, it seems that the informative content (higher R2 and lower p-value for validness of regression) is ordered as follows: replies $>$ score $>$ length ratio $>$ length. (Notice that it is quite different from the results we got in \hyperref[sec:ffn_hlr]{BEVoCI for Meta Cognition}.)
 \end{itemize}
 
 Therefore, we present here the statistical results only for the most informative model/hierarchy - hierarchy 8 with the cues: replies, score, length ratio. However, the complete results (including all of the corresponding graphs) can be found in the 'data\_exploration.ipynb' file, or in the pdf export which we include with this file.\\
@@ -608,7 +612,7 @@ Here is a table of (selected) statistical results for hierarchy 8:
   \end{center}
 \end{table}
 
-Here are the results from the statistical tests (in the same order in which we have presented them earlier - \href{list:stat_tests}{Statistical Tests}) (test result, p-value (if relevant)):
+Here are the results from the statistical tests (in the same order in which we have presented them earlier - \hyperref[list:stat_tests]{Statistical Tests}) (test result, p-value (if relevant)):
 \begin{table}[H]
   \begin{center}
   \begin{tabular}{|l|c|c|c|c|c|c|}
@@ -722,6 +726,53 @@ Plots of different cues and their effects on the final sureness:
 \end{figure}
 
 \section{Conclusions}
+We would like to preface all our conclusions by saying that we are happy to have encountered all of the problems that we did, both in the process of data collection (i.e. having to scrape a huge number of subreddits in order to get a required number of points) and in the process of data processing (i.e. models that do not learn well from the data, and linear regressions which are not valid to use.)\\
+We believe that the process we underwent shows an authentic experience of trying to collect, label, and train on the data from the internet.
 \subsection{Possible problems in data collection}
+We have written at length about the problems which might arise from collecting data from internet forums in \hyperref[sec:inter_conclusions]{Intermediate Conclusions}, however we would like to linger on a few things.\\
+\begin{itemize}
+    \item Firstly, we have seen in all of the influence plots presented that there is at least one ourlier which strongly affects predictive power of the model. As we have not stored either the question or the answer texts, we cannot be sure why those points are outliers. Is it a comment/post by a troll or flamer, or is it a legitimate post with variance that we do not understand?
+    \item Secondly, collecting data in a real world setting is very different from working with synthetic data produced in controlled experiments with precisely defined settings. Working with forums we involuntarily encounter a very complex dynamics of human communities, whose interactions are affected by time, current state of the world, and each other. It is unclear if it will be ever possible to clearly explain the data by the methods we have used here.
+    \item And finally, we have collected both the data and labels in a very crude way: 
+    \begin{itemize}
+        \item Static rules of the form "has ?" or "contains 'help' " are not able to properly sort relevant questions from irrelevant ones. Moreover, we have not sorted the comments at all, which means that possibly there are comments with a high score/length/replies number, which have absolutely nothing to do with the question itself, and are only aiming at achieving community engagement.
+        \item Additionally, when we have collected the comments, each question had a different "life-time". That is, some questions were new, and therefore the comments still had little engagement, while others were posted a few months previously. This too, may have greatly affected the results.
+        \item Similarly to the previous point - there are differences between different forums. Some might have a much higher engagement than others; different tendency of people to like, reply or comment. Ideally there should be a way to normalize the results according to each of the responsible subreddits.
+        \item Each label we have used for prediction was an average of opinions of 5 people, and it is unclear if it was enough to cancel the individual biases, or possibly could we have made them worse?\\
+    \end{itemize}
+    Ideally, such data collection pipeline should include an LLM step, which would selectively filter the questions and answers by their content. This might help to get a much cleaner data, but could also introduce a new source of bias.
+\end{itemize}
+
+\subsection{A few words on the BEVoCI results}
+Fistly, we have clearly seen that for the \hyperref[sec:ffn_hlr]{explainability of the neural network}, the Hierarchical Regression approach hasn't worked at all. Even the best set of cues has an $R^2$ value of around 13\%, and if we look at the p-value of the test for validity of either the linear regression use, or addition of new cues, non of them surpasses the value of 0.05.\\
+This is due, probably, to the fact that many of the assumptions which should hold to use linear regression in the first place are not true in this case - non of the cues holds the linearity assumption. Normality of residuals by Shapiro-Wilk test doesn't hold; and even the Rainbow test - which checks for linearity of a middle subsection of the points, holds with a relatively low p-value (null hypothesis is that there is linearity, therefore the higher - the better).
+
+As to the analysis we have done on the full data - here too, we can see that the regression did not succeed. The best set of cues has an $R^2$ value of around 19\%, and out of all the cues only the 'replies' passes the linearity tests. 'replies' is also the only cue which passes the validity of use of linear regression test (with p-value of 0.0074); and addition of all others is not statistically valid.\\
+It is interesting to note in this context that if we assume that replies is indeed a cue that is used by people to make their sureness prediction, it has a clear negative effect on the final label. We can put forward a hypothesis that the less coherent an answer (comment) is - the more pople would reply and express their disagreement. However, a similar hypothesis can be done in the other direction, therefore we are not sure how trustworthy these results are.\\
+To stress this point even more, we could look again at the graph of sureness as a function of replies:
+\begin{figure}[H]
+    \begin{center}
+    \includegraphics[width=0.6\linewidth]{../plots/full_data/replies_vs_sureness}
+    \caption{Replies - Sureness}
+    \end{center}
+\end{figure}
+It could be said that there is indeed a negative linear correlation between the replies cue and the sureness value. But in truth, there is a very high variance for any value of replies, and if we look at the histogram of the frequency of the replies:
+\begin{figure}[H]
+    \begin{center}
+    \includegraphics[width=0.6\linewidth]{../plots/replies_histogram}
+    \caption{Replies - Sureness}
+    \end{center}
+\end{figure}
+There are just many more points with lower reply values.\\
+
+In order to say something for sure we would need many more points to explore.
+
+\subsection{Final Remarks}
+Doing this project is the first we have met the Hierarchical Linear Regression approaches, and we strongly believe that there is much promise to the BEVoCI methodology.\\ 
+However, usefullness of the results produced by this method are limited to data with either true linear relations, or non-linear data with a low level of non-linear complexity.\\
+
+Data collected from the internet exhibits many inherent correlations, and is in large a projection of complex social dynamics. It is yet to be seen whether some, or any, aspects of this dynamics could be usefully explained by the HLR methods.\\
+
+Deep learning models, and specifically neural networks, are powerful, in large, due to the non-linear properties that they introduce through the different activation layers. We think that even if very simple networks could be explained by regression models (by the virtue of themselves being not far from linear), more complex networks would produce dynamics so non-linear that they would not be comprehensible with the help of BEVoCI. 
 
 \end{document}  
