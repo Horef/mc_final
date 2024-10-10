@@ -7,8 +7,6 @@ from models import FeedForwardNetwork as ffn
 from sklearn.linear_model import LinearRegression
 from models import DecisionTree as dt
 from models.Baseline import Baseline
-from tqdm import tqdm
-from models.FNNFusedKNN import FNNFusedKNN
 
 def test_different_models():
     # loading the data
@@ -244,8 +242,9 @@ def create_FFN_data():
     predictions = model.predict(data.drop(columns=['sureness']).to_numpy())
     data['sureness'] = predictions
     data.to_pickle('labels/ffn_data.pkl')
+    data.to_csv('labels/ffn_data.csv')
     print('Data with predictions saved')
 
 if __name__ == '__main__':
-    test_different_models()
-    # create_FFN_data()
+    # test_different_models()
+    create_FFN_data()
