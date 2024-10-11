@@ -32,3 +32,5 @@ and do the hierarchical analysis.
   - [first_25](raw_labels/first_25): folder containing the raw labels for the first 25 comments (one file for each person)
   - [second_25](raw_labels/second_25): folder containing the raw labels for the second 25 comments (one file for each person)
 - [To give in](To%20give%20in): folder with the final version of the project pdf
+  - [report_gal_sergiy.pdf](To%20give%20in/report_gal_sergiy.pdf): the final version of the project pdf
+  - [data_exploration.pdf](To%20give%20in/data_exploration.pdf): the pdf version of the data exploration notebook
